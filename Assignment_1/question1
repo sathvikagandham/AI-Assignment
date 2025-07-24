@@ -1,0 +1,76 @@
+from collections import deque
+
+def is_goal(state):
+    return state == goal_state
+
+def get_next_states(state):
+    next_states = []
+    index = state.index('_')
+    directions = [(-1, -2), (1, 2)]  
+
+    for d in directions:
+        for step in d:
+            new_idx = index + step
+            if 0 <= new_idx < len(state):
+                if step == -1 and state[new_idx] == 'R':
+                    new_state = state.copy()
+                    new_state[index], new_state[new_idx] = new_state[new_idx], new_state[index]
+                    next_states.append(new_state)
+                elif step == -2 and state[new_idx] == 'R' and state[index - 1] == 'F':
+                    new_state = state.copy()
+                    new_state[index], new_state[new_idx] = new_state[new_idx], new_state[index]
+                    next_states.append(new_state)
+                elif step == 1 and state[new_idx] == 'F':
+                    new_state = state.copy()
+                    new_state[index], new_state[new_idx] = new_state[new_idx], new_state[index]
+                    next_states.append(new_state)
+                elif step == 2 and state[new_idx] == 'F' and state[index + 1] == 'R':
+                    new_state = state.copy()
+                    new_state[index], new_state[new_idx] = new_state[new_idx], new_state[index]
+                    next_states.append(new_state)
+    return next_states
+
+# DFS Implementation
+def dfs(state, visited, path):
+    if is_goal(state):
+        return path + [state]
+    visited.add(tuple(state))
+    for next_state in get_next_states(state):
+        if tuple(next_state) not in visited:
+            result = dfs(next_state, visited, path + [state])
+            if result:
+                return result
+    return None
+
+# BFS Implementation
+def bfs(start_state):
+    queue = deque()
+    visited = set()
+    queue.append((start_state, [start_state]))
+
+    while queue:
+        current_state, path = queue.popleft()
+        if is_goal(current_state):
+            return path
+        visited.add(tuple(current_state))
+        for next_state in get_next_states(current_state):
+            if tuple(next_state) not in visited:
+                queue.append((next_state, path + [next_state]))
+    return None
+
+# Initial and goal states
+initial_state = ['R', 'R', 'R', '_', 'F', 'F', 'F']
+goal_state = ['F', 'F', 'F', '_', 'R', 'R', 'R']
+
+# Run both
+dfs_path = dfs(initial_state, set(), [])
+bfs_path = bfs(initial_state)
+
+# Print Output
+print("DFS Path:")
+for step in dfs_path:
+    print(''.join(step))
+
+print("\nBFS Path:")
+for step in bfs_path:
+    print(''.join(step))
