@@ -1,0 +1,91 @@
+from collections import deque, namedtuple
+
+# Define crossing times
+cross_time = {'A': 1, 'B': 2, 'C': 5, 'D': 10}
+
+# Define state structure
+State = namedtuple("State", "left right torch time path")
+
+# Initial state
+initial_state = State(left=frozenset(['A', 'B', 'C', 'D']),
+                      right=frozenset(),
+                      torch='left',
+                      time=0,
+                      path=[])
+
+# Goal condition
+def is_goal(state):
+    return len(state.left) == 0 and state.torch == 'right'
+
+# Move generation
+def generate_moves(state):
+    next_states = []
+    if state.torch == 'left':
+        movers = list(state.left)
+        for i in range(len(movers)):
+            for j in range(i, len(movers)):
+                move = {movers[i], movers[j]}
+                new_left = state.left - move
+                new_right = state.right | move
+                move_time = max(cross_time[p] for p in move)
+                new_state = State(left=new_left, right=new_right, torch='right',
+                                  time=state.time + move_time, path=state.path + [f"{'+'.join(sorted(move))} → ({move_time}min)"])
+                next_states.append(new_state)
+    else:
+        movers = list(state.right)
+        for p in movers:
+            move = {p}
+            new_left = state.left | move
+            new_right = state.right - move
+            move_time = cross_time[p]
+            new_state = State(left=new_left, right=new_right, torch='left',
+                              time=state.time + move_time, path=state.path + [f"{p} ← ({move_time}min)"])
+            next_states.append(new_state)
+    return next_states
+
+# DFS algorithm
+def dfs(state, visited):
+    if is_goal(state):
+        return state
+    key = (state.left, state.torch)
+    if key in visited or state.time > 30:
+        return None
+    visited.add(key)
+    for next_state in generate_moves(state):
+        result = dfs(next_state, visited.copy())
+        if result:
+            return result
+    return None
+
+# BFS algorithm
+def bfs(initial):
+    queue = deque([initial])
+    visited = set()
+    while queue:
+        state = queue.popleft()
+        if is_goal(state):
+            return state
+        key = (state.left, state.torch)
+        if key in visited or state.time > 30:
+            continue
+        visited.add(key)
+        for next_state in generate_moves(state):
+            queue.append(next_state)
+    return None
+
+# Run both searches
+dfs_result = dfs(initial_state, set())
+bfs_result = bfs(initial_state)
+
+# Print result
+def print_result(result, label):
+    if result:
+        print(f"\n{label} Result:")
+        for step in result.path:
+            print(step)
+        print(f"Total Time: {result.time} minutes")
+    else:
+        print(f"\n{label} Result: No solution found.")
+
+print_result(dfs_result, "DFS")
+print_result(bfs_result, "BFS")
